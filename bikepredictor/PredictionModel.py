@@ -1,9 +1,4 @@
 import json
-import time
-from scipy import stats
-from numpy import arange, array, ones
-
-API_URL = "http://api.citybik.es/dublinbikes.json"
 
 # Now for some forecasting/scheduling parameters
 alpha = 0.5
@@ -14,10 +9,10 @@ forecastHorizon = 15
 splitVariance = True
 LOG_VERBOSE = True
 
-class BikePredictEngine:
+class PredictionModel:
 
 	def __init__(self):
-
+		self.numPredictions = 0			
 	
 	def getPrediction(self, sequence):
 		""" A Holt-Winters Exponential Smoothing Model with a 
@@ -29,22 +24,19 @@ class BikePredictEngine:
 		if len(sequence) < 1:
 			return None, None
 		elif len(sequence) < 2:
-			return dataList[-1], 0.0
+			return sequence[-1]
 		# Performs the exp. smoothing list. 
 		else:
-			st1 = dataList[1]
-			bt1 = dataList[1]-dataList[0]
+			estimate = sequence[1]
+			bounds = sequence[1]-sequence[0]
 
 			index = 2
-			while index < len(dataList):
-				xt = dataList[index]
-				st2 = st1
-				bt2 = bt1
-				st1 = (alpha*xt) + ((1-alpha)*(st2+bt1))
-				bt1 = (beta*(st1-st2)) + ((1-beta)*bt2)
+			while index < len(sequence):
+				currentValue = sequence[index]
+				prevEstimate = estimate
+				prevBounds = bounds
+				estimate = (alpha*currentValue) + ((1-alpha)*(prevEstimate+bounds))
+				bounds = (beta*(estimate-prevEstimate)) + ((1-beta)*prevBounds)
 				index += 1
 
-			print st1,bt1
-
-			return st1
-	
+			return estimate
